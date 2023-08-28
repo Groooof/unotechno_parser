@@ -1,3 +1,6 @@
+from dataclasses import asdict
+from pprint import pprint
+
 from src import api, pages
 
 api = api.UnotechnoApi()
@@ -32,6 +35,28 @@ for category in categories:
         product_page_html = api.get_product_page(product_url)
         product_page = pages.ProductPage(product_page_html)
 
-        p_m = product_page.get_product_modifications()
-        print(list(p_m))
+        # with open("t_html.txt", "w") as f:
+        #     f.write(product_page_html)
+
+        name = product_page.get_product_name()
+        article = product_page.get_article()
+        images = list(product_page.get_images_urls())
+        in_stock = product_page.get_in_stock_status()
+        price = product_page.get_price()
+        short_desc = product_page.get_short_desc()
+        characs = product_page.get_characteristics()
+        mods = product_page.get_product_modifications()
+
+        pprint(f"Article: {article}")
+        pprint(f"In stock: {in_stock}")
+        pprint(f"Price: {price}")
+        pprint(f"Short desc: {short_desc}")
+        print("Images:")
+        pprint(list(map(asdict, images)))
+        print("Characs:")
+        pprint(list(map(asdict, characs)))
+        print("Mods:")
+        pprint(list(map(asdict, mods)))
+
         break
+    break

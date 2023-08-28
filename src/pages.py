@@ -1,8 +1,10 @@
 import typing as tp
-from dataclasses import dataclass
-from urllib.parse import urlparse
+from dataclasses import asdict, dataclass
+from urllib.parse import urljoin, urlparse
 
 from lxml import html as _html
+
+import settings
 
 
 class BasePage:
@@ -26,7 +28,7 @@ class BasePage:
         """
         elems = self.find_elements(xpath)
         elem = elems[0] if len(elems) > 0 else None
-        # return elem if elem else None
+        elem = elem.strip() if isinstance(elem, str) else elem
         return elem
 
     def find_elements(self, xpath) -> tp.List[tp.Union[_html.HtmlElement, str]]:
@@ -129,36 +131,91 @@ class ProductModificationElem(BasePage):
             )
 
 
+@dataclass
+class ProductImage:
+    small_url: str
+    orig_url: str
+
+
+class ProductImageElem(BasePage):
+    def get_small_img_url(self) -> tp.Optional[str]:
+        xpath = "/@href"
+        elem = self.find_element(xpath)
+        if elem is None:
+            return None
+        return urljoin(settings.UNOTECHNO_MAIN_LINK, elem)
+
+    def get_orig_img_url(self) -> tp.Optional[str]:
+        xpath = "/img/@src"
+        elem = self.find_element(xpath)
+        if elem is None:
+            return None
+        return urljoin(settings.UNOTECHNO_MAIN_LINK, elem)
+
+
+@dataclass
+class ProductCharacteristic:
+    name: str
+    value: str
+
+
+class ProductCharacteristicElem(BasePage):
+    def get_name(self):
+        xpath = '/td[@class="product_features-title"]/span/text()'
+        elem = self.find_element(xpath)
+        return elem
+
+    def get_value(self):
+        xpath = '/td[@class="product_features-value"]/text()'
+        elem = self.find_element(xpath)
+        return elem
+
+
 class ProductPage(BasePage):
-    def get_images_urls(self):
-        xpath = ""
-        elems = self.find_elements(xpath)
-        return elems
-
-    def get_article(self):
-        xpath = ""
+    def get_product_name(self) -> tp.Optional[str]:
+        xpath = "//article/h1//text()"
         elem = self.find_element(xpath)
         return elem
 
-    def get_in_stock_status(self):
-        xpath = ""
+    def get_images_urls(self) -> tp.Optional[tp.List[ProductImage]]:
+        xpath = '//div[@class="product-card__gallery"]//div[contains(@class,"gallery-previews-b__el")]//a[contains(@id, "product-image")]'
+        for elem in self.find_elements(xpath):
+            product_image_elem = ProductImageElem(elem)
+            yield ProductImage(
+                small_url=product_image_elem.get_small_img_url(),
+                orig_url=product_image_elem.get_orig_img_url(),
+            )
+
+    def get_article(self) -> tp.Optional[str]:
+        xpath = '//div[@class="product-code"]/span[2]/text()'
         elem = self.find_element(xpath)
         return elem
 
-    def get_price(self):
-        xpath = ""
+    def get_in_stock_status(self) -> tp.Optional[bool]:
+        xpath = '//strong[contains(@class,"product-stock")]/text()'
         elem = self.find_element(xpath)
-        return elem
+        is_in_stock = elem == "В наличии"
+        return is_in_stock
 
-    def get_short_desc(self):
-        xpath = ""
+    def get_price(self) -> tp.Optional[int]:
+        # TODO what if no price
+        xpath = '//div[contains(@class,"product-card__prices")]/div[@class="price"]/@data-price'
+        elem = self.find_element(xpath)
+        return int(elem) if elem is not None else None
+
+    def get_short_desc(self) -> tp.Optional[str]:
+        xpath = '//div[@class="product-card__summary"]/text()'
         elem = self.find_element(xpath)
         return elem
 
     def get_characteristics(self):
-        xpath = ""
-        elem = self.find_element(xpath)
-        return elem
+        xpath = '//div[@id="product-options"]//tr[@class="product_features-item "]'
+        for elem in self.find_elements(xpath):
+            product_characteristic_elem = ProductCharacteristicElem(elem)
+            yield ProductCharacteristic(
+                name=product_characteristic_elem.get_name(),
+                value=product_characteristic_elem.get_value(),
+            )
 
     def get_delivery_info(self):
         xpath = ""
