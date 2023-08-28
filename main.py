@@ -46,6 +46,7 @@ for category in categories:
         short_desc = product_page.get_short_desc()
         characs = product_page.get_characteristics()
         mods = product_page.get_product_modifications()
+        delivery = product_page.get_delivery_info()
 
         pprint(f"Article: {article}")
         pprint(f"In stock: {in_stock}")
@@ -57,6 +58,8 @@ for category in categories:
         pprint(list(map(asdict, characs)))
         print("Mods:")
         pprint(list(map(asdict, mods)))
+        print("Delivery:")
+        pprint(list(map(asdict, delivery)))
 
         break
     break

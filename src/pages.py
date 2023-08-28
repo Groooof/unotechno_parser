@@ -1,5 +1,6 @@
 import typing as tp
 from dataclasses import asdict, dataclass
+from enum import Enum
 from urllib.parse import urljoin, urlparse
 
 from lxml import html as _html
@@ -171,6 +172,34 @@ class ProductCharacteristicElem(BasePage):
         return elem
 
 
+class ProductFullDescViewType(Enum):
+    text = "text"
+    html = "html"
+
+
+class ProductFullDescElem(BasePage):
+    def get_data(self, type: ProductFullDescViewType = ProductFullDescViewType.text):
+        ...
+
+
+@dataclass
+class DeliveryMethod:
+    name: str
+    values: str
+
+
+class DeliveryMethodElem(BasePage):
+    def get_name(self):
+        xpath = "/p[1]/text()"
+        elem = self.find_element(xpath)
+        return elem
+
+    def get_values(self) -> tp.Optional[tp.List[str]]:
+        xpath = '/div[@class="dostavka_zagolovok"]//text()'
+        elem = self.find_elements(xpath)
+        return elem
+
+
 class ProductPage(BasePage):
     def get_product_name(self) -> tp.Optional[str]:
         xpath = "//article/h1//text()"
@@ -208,6 +237,12 @@ class ProductPage(BasePage):
         elem = self.find_element(xpath)
         return elem
 
+    def get_full_desc(
+        self, type: ProductFullDescViewType = ProductFullDescViewType.text
+    ):
+        xpath = '//div[@class="product-card__description"]'
+        elem = self.find_element(xpath)
+
     def get_characteristics(self):
         xpath = '//div[@id="product-options"]//tr[@class="product_features-item "]'
         for elem in self.find_elements(xpath):
@@ -218,8 +253,13 @@ class ProductPage(BasePage):
             )
 
     def get_delivery_info(self):
-        xpath = ""
-        elem = self.find_element(xpath)
+        xpath = '//div[@id="product-page-addinfo1"]/table//td'
+        for elem in self.find_elements(xpath):
+            delivery_method_elem = DeliveryMethodElem(elem)
+            yield DeliveryMethod(
+                name=delivery_method_elem.get_name(),
+                values=delivery_method_elem.get_values(),
+            )
         return elem
 
     def get_product_modifications(self):
