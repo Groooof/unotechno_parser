@@ -1,5 +1,6 @@
 from dataclasses import asdict
 from pprint import pprint
+from urllib.parse import urlparse
 
 from src import api, pages
 
@@ -31,13 +32,14 @@ for category in categories:
         print(f"page {page}, products {len(curr_page_products_urls)}")
         break
 
-    for product_url in products_urls:
+    for product_url in products_urls[5:]:
         product_page_html = api.get_product_page(product_url)
         product_page = pages.ProductPage(product_page_html)
 
         # with open("t_html.txt", "w") as f:
         #     f.write(product_page_html)
 
+        slug = urlparse(product_url).path.split("/")[-2]
         name = product_page.get_product_name()
         article = product_page.get_article()
         images = list(product_page.get_images_urls())
@@ -47,7 +49,12 @@ for category in categories:
         characs = product_page.get_characteristics()
         mods = product_page.get_product_modifications()
         delivery = product_page.get_delivery_info()
+        full_desc = product_page.get_full_desc()
+        full_desc_html = product_page.get_full_desc(
+            type=pages.ProductFullDescViewType.html
+        )
 
+        print("Slug", slug)
         pprint(f"Article: {article}")
         pprint(f"In stock: {in_stock}")
         pprint(f"Price: {price}")
@@ -60,6 +67,10 @@ for category in categories:
         pprint(list(map(asdict, mods)))
         print("Delivery:")
         pprint(list(map(asdict, delivery)))
+        print("Full desc:")
+        pprint(full_desc)
+        print("Full desc html:")
+        pprint(full_desc_html)
 
         break
     break

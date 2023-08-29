@@ -29,7 +29,7 @@ class BasePage:
         """
         elems = self.find_elements(xpath)
         elem = elems[0] if len(elems) > 0 else None
-        elem = elem.strip() if isinstance(elem, str) else elem
+        elem = elem.strip().replace("\xad", "") if isinstance(elem, str) else elem
         return elem
 
     def find_elements(self, xpath) -> tp.List[tp.Union[_html.HtmlElement, str]]:
@@ -37,7 +37,10 @@ class BasePage:
         Поиск нескольких элементов по заданному выражению xpath.
         Если ничего не найдено - возвращает пустой список.
         """
-        return self.dom.xpath(self.xpath_begin + xpath)
+        return [
+            elem.strip().replace("\xad", "") if isinstance(elem, str) else elem
+            for elem in self.dom.xpath(self.xpath_begin + xpath)
+        ]
 
 
 @dataclass
@@ -140,14 +143,14 @@ class ProductImage:
 
 class ProductImageElem(BasePage):
     def get_small_img_url(self) -> tp.Optional[str]:
-        xpath = "/@href"
+        xpath = "/img/@src"
         elem = self.find_element(xpath)
         if elem is None:
             return None
         return urljoin(settings.UNOTECHNO_MAIN_LINK, elem)
 
     def get_orig_img_url(self) -> tp.Optional[str]:
-        xpath = "/img/@src"
+        xpath = "/@href"
         elem = self.find_element(xpath)
         if elem is None:
             return None
@@ -177,9 +180,87 @@ class ProductFullDescViewType(Enum):
     html = "html"
 
 
-class ProductFullDescElem(BasePage):
-    def get_data(self, type: ProductFullDescViewType = ProductFullDescViewType.text):
-        ...
+class ProductFullDescTagElem(BasePage):
+    def get_data(self):
+        tag_method_map = {
+            "p": self._parse_p,
+            "figure": self._parse_figure,
+            "h1": self._parse_p,
+            "h2": self._parse_p,
+            "h3": self._parse_p,
+            "h4": self._parse_p,
+            "h5": self._parse_p,
+            "h6": self._parse_p,
+            "ul": self._parse_list,
+            "ol": self._parse_list,
+            "table": self._parse_table,
+        }
+
+        parse_method = tag_method_map[self.dom.tag]
+        return parse_method()
+
+    def _parse_p(self):
+        xpath = "//text()"
+        elems = self.find_elements(xpath)
+        return "\n".join(elems) if elems else None
+
+    def _parse_figure(self):
+        xpath = "/img/@src"
+        elem = self.find_element(xpath)
+        return urljoin(settings.UNOTECHNO_MAIN_LINK, elem) if elem is not None else None
+
+    def _parse_list(self):
+        xpath = "/li"
+        elems = self.find_elements(xpath)
+
+        list_text = []
+        for i in range(1, len(self.find_elements(xpath)) + 1):
+            xpath = f"/li[{i}]//text()"
+            elems = self.find_elements(xpath)
+            list_text.append("".join(elems))
+        return "\n".join(list_text) if list_text else None
+
+    def _parse_table(self):
+        xpath = "//tr"
+        elems = self.find_elements(xpath)
+
+        table_text = []
+        for i in range(1, len(elems) + 1):
+            xpath = f"//tr[{i}]/td"
+            elems = self.find_elements(xpath)
+
+            tr_text = []
+            for j in range(1, len(elems) + 1):
+                xpath = f"//tr[{i}]/td[{j}]//text()"
+                elems = self.find_elements(xpath)
+                tr_text.append(":".join(elems) if elems else "")
+            table_text.append(tr_text)
+        return "\n".join(table_text) if table_text else None
+
+
+class ProductFullDescTextElem(BasePage):
+    def get_data(self):
+        data = []
+        xpath = '/a[@class="product-card__brand"]/img/@src'
+        elem = self.find_element(xpath)
+        brand_img_url = (
+            urljoin(settings.UNOTECHNO_MAIN_LINK, elem) if elem is not None else None
+        )
+        data.append(brand_img_url)
+
+        xpath = "/div/*"
+        elems = self.find_elements(xpath)
+        for elem in elems:
+            tag_elem = ProductFullDescTagElem(elem)
+            tag_data = tag_elem.get_data()
+            if tag_data is not None:
+                data.append(tag_data)
+        return data
+
+
+class ProductFullDescHtmlElem(BasePage):
+    def get_data(self):
+        return _html.tostring(self.dom, pretty_print=True, encoding="unicode")
 
 
 @dataclass
@@ -240,8 +321,16 @@ class ProductPage(BasePage):
     def get_full_desc(
         self, type: ProductFullDescViewType = ProductFullDescViewType.text
     ):
+        full_desc_parser_class_factory = {
+            ProductFullDescViewType.text: ProductFullDescTextElem,
+            ProductFullDescViewType.html: ProductFullDescHtmlElem,
+        }
         xpath = '//div[@class="product-card__description"]'
         elem = self.find_element(xpath)
+
+        full_desc_parser_class = full_desc_parser_class_factory.get(type)
+        full_desc_elem = full_desc_parser_class(elem)
+        return full_desc_elem.get_data()
 
     def get_characteristics(self):
         xpath = '//div[@id="product-options"]//tr[@class="product_features-item "]'
