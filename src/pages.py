@@ -1,5 +1,5 @@
 import typing as tp
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from enum import Enum
 from urllib.parse import urljoin, urlparse
 
@@ -194,10 +194,16 @@ class ProductFullDescTagElem(BasePage):
             "ul": self._parse_list,
             "ol": self._parse_list,
             "table": self._parse_table,
+            "li": self._parse_text,
         }
 
         parse_method = tag_method_map[self.dom.tag]
         return parse_method()
+
+    def _parse_text(self):
+        xpath = "//text()"
+        elems = self.find_elements(xpath)
+        return "".join(elems)
 
     def _parse_p(self):
         xpath = "//text()"
@@ -327,6 +333,8 @@ class ProductPage(BasePage):
         }
         xpath = '//div[@class="product-card__description"]'
         elem = self.find_element(xpath)
+        if elem is None:
+            return []
 
         full_desc_parser_class = full_desc_parser_class_factory.get(type)
         full_desc_elem = full_desc_parser_class(elem)
