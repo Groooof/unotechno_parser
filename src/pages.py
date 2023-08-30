@@ -1,4 +1,5 @@
 import typing as tp
+from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from urllib.parse import urljoin, urlparse
@@ -182,20 +183,23 @@ class ProductFullDescViewType(Enum):
 
 class ProductFullDescTagElem(BasePage):
     def get_data(self):
-        tag_method_map = {
-            "p": self._parse_p,
-            "figure": self._parse_figure,
-            "h1": self._parse_p,
-            "h2": self._parse_p,
-            "h3": self._parse_p,
-            "h4": self._parse_p,
-            "h5": self._parse_p,
-            "h6": self._parse_p,
-            "ul": self._parse_list,
-            "ol": self._parse_list,
-            "table": self._parse_table,
-            "li": self._parse_text,
-        }
+        tag_method_map = defaultdict(self._parse_text)
+        tag_method_map.update(
+            {
+                "p": self._parse_p,
+                "figure": self._parse_figure,
+                "h1": self._parse_p,
+                "h2": self._parse_p,
+                "h3": self._parse_p,
+                "h4": self._parse_p,
+                "h5": self._parse_p,
+                "h6": self._parse_p,
+                "ul": self._parse_list,
+                "ol": self._parse_list,
+                "table": self._parse_table,
+                "li": self._parse_text,
+            }
+        )
 
         parse_method = tag_method_map[self.dom.tag]
         return parse_method()
@@ -250,7 +254,7 @@ class ProductFullDescTextElem(BasePage):
         xpath = '/a[@class="product-card__brand"]/img/@src'
         elem = self.find_element(xpath)
         brand_img_url = (
-            urljoin(settings.UNOTECHNO_MAIN_LINK, elem) if elem is not None else None
+            urljoin(settings.UNOTECHNO_MAIN_LINK, elem) if elem is not None else ""
         )
         data.append(brand_img_url)
 

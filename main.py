@@ -1,4 +1,5 @@
 import logging
+import traceback
 from dataclasses import asdict
 from pprint import pprint
 from urllib.parse import urljoin, urlparse
@@ -33,18 +34,21 @@ for category in categories[::-1]:
     try:
         category_page_html = api.get_category_page(category.rel_url, items_per_page=30)
     except Exception as ex:
+        print(".!.")
         logging.warn(f"Failed to get category page ({category.name})")
         continue
 
     try:
         category_page = pages.CategoryPage(category_page_html)
     except Exception as ex:
+        print(".!.")
         logging.warn(f"Failed to parse category page ({category.name})")
         continue
 
     try:
         pages_count = category_page.get_pages_count()
     except Exception as ex:
+        print(".!.")
         logging.warn(f"Failed to parse category pages count ({category.name})")
         continue
 
@@ -59,6 +63,7 @@ for category in categories[::-1]:
                 category.rel_url, page=page, items_per_page=30
             )
         except Exception as ex:
+            print(".!.")
             logging.warn(f"Failed to get products page {page} ({category.name})")
             continue
 
@@ -67,7 +72,8 @@ for category in categories[::-1]:
             curr_page_products_urls = category_page.get_products_urls()
             products_urls.extend(curr_page_products_urls)
         except Exception as ex:
-            logging.warn(ex)
+            print(".!.")
+            logging.warn(1, traceback.format_exc())
             continue
         logging.info(f"Found {len(curr_page_products_urls)} items on this page")
 
@@ -112,17 +118,19 @@ for category in categories[::-1]:
             data_row["full_desc_html"] = full_desc_html
 
         except Exception as ex:
-            logging.warn(ex)
+            print(".!.")
+            logging.warn(2, traceback.format_exc())
             continue
 
         data.append(data_row)
-        pprint(data_row)
+        # pprint(data_row)
 
     try:
         df = pd.DataFrame(data=data)
         df.to_excel(f"{category.name.strip().lower()}.xlsx", index=False)
     except Exception as ex:
-        logging.warn(ex)
+        print(".!.")
+        logging.warn(3, traceback.format_exc())
         continue
 
     logging.info(f"Category {category.name} parsed succesfull!")
