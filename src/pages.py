@@ -170,9 +170,9 @@ class ProductCharacteristicElem(BasePage):
         return elem
 
     def get_value(self):
-        xpath = '/td[@class="product_features-value"]/text()'
-        elem = self.find_element(xpath)
-        return elem
+        xpath = '/td[@class="product_features-value"]//text()'
+        elems = self.find_elements(xpath)
+        return "".join(elems)
 
 
 class ProductFullDescViewType(Enum):
@@ -233,8 +233,8 @@ class ProductFullDescTagElem(BasePage):
             for j in range(1, len(elems) + 1):
                 xpath = f"//tr[{i}]/td[{j}]//text()"
                 elems = self.find_elements(xpath)
-                tr_text.append(":".join(elems) if elems else "")
-            table_text.append(tr_text)
+                tr_text.append("".join(elems) if elems else "")
+            table_text.append(":".join(tr_text) if tr_text else "")
         return "\n".join(table_text) if table_text else None
 
 
