@@ -27,7 +27,7 @@ main_page = pages.MainPage(main_page_html)
 categories = main_page.get_categories()
 
 
-for category in categories[::-1]:
+for category in categories:
     data = []
     logging.info(f"Parse category {category.name}")
 
@@ -55,7 +55,7 @@ for category in categories[::-1]:
     logging.info(f"Category have {pages_count} pages with 30 items per page")
     logging.info(f"Total: {pages_count * 30} items")
     products_urls = []
-    for page in range(1, pages_count + 1):
+    for page in range(1, 2):  # pages_count + 1):
         logging.info(f"Parse {page} page")
 
         try:
@@ -93,7 +93,7 @@ for category in categories[::-1]:
             images = list(product_page.get_images_urls())
             in_stock = product_page.get_in_stock_status()
             price = product_page.get_price()
-            price_with_sale = product_page.get_price()
+            price_with_sale = product_page.get_price_with_sale()
             short_desc = product_page.get_short_desc()
             characs = product_page.get_characteristics()
             mods = product_page.get_product_modifications()
@@ -104,20 +104,24 @@ for category in categories[::-1]:
             )
 
             data_row = {}
-            data_row["url"] = urljoin(settings.UNOTECHNO_MAIN_LINK, product_url)
+            data_row["Ссылка"] = urljoin(settings.UNOTECHNO_MAIN_LINK, product_url)
             data_row["slug"] = slug
-            data_row["article"] = article
-            data_row["images"] = list(map(asdict, images))
-            data_row["in_stock"] = in_stock
-            data_row["price"] = price
-            data_row["price_with_sale"] = price_with_sale
-            data_row["short_desc"] = short_desc
+            data_row["Наименование"] = name
+            data_row["Артикул"] = article
+            for i, image in enumerate(images, start=1):
+                data_row[f"Изобр. {i} (ориг)"] = image.orig_url
+                data_row[f"Изобр. {i} (мин)"] = image.small_url
+
+            data_row["В наличии"] = in_stock
+            data_row["Цена"] = price
+            data_row["Цена со скидкой"] = price_with_sale if price_with_sale else price
+            data_row["Короткое описание"] = short_desc
             for charac in characs:
-                data_row[charac.name] = charac.value
-            data_row["mods"] = list(map(asdict, mods))
-            data_row["delivery"] = list(map(asdict, delivery))
-            data_row["full_desc"] = "\n".join(full_desc)
-            data_row["full_desc_html"] = full_desc_html
+                data_row[f"Характеристика: {charac.name}"] = charac.value
+            data_row["Модификации"] = list(map(asdict, mods))
+            data_row["Доставка"] = list(map(asdict, delivery))
+            data_row["Полное описание (текст)"] = "\n".join(full_desc)
+            data_row["Полное описание (html)"] = full_desc_html
 
         except Exception as ex:
             print(".!.")
@@ -129,7 +133,7 @@ for category in categories[::-1]:
 
     try:
         df = pd.DataFrame(data=data)
-        df.to_excel(f"{category.name.strip().lower()}.xlsx", index=False)
+        df.to_excel(f"{category.name.strip().lower()}_0.xlsx", index=False)
     except Exception as ex:
         print(".!.")
         logging.warn(3, traceback.format_exc())
