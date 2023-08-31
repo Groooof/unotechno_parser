@@ -183,7 +183,7 @@ class ProductFullDescViewType(Enum):
 
 class ProductFullDescTagElem(BasePage):
     def get_data(self):
-        tag_method_map = defaultdict(self._parse_text)
+        tag_method_map = defaultdict(lambda: self._parse_text)
         tag_method_map.update(
             {
                 "p": self._parse_p,
@@ -361,7 +361,6 @@ class ProductPage(BasePage):
                 name=delivery_method_elem.get_name(),
                 values=delivery_method_elem.get_values(),
             )
-        return elem
 
     def get_product_modifications(self):
         xpath = '//div[@class="product-modifications"]/div[@class="product-modifications__item"]'
