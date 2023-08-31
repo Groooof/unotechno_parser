@@ -318,10 +318,14 @@ class ProductPage(BasePage):
         return is_in_stock
 
     def get_price(self) -> tp.Optional[int]:
-        # TODO what if no price
         xpath = '//div[contains(@class,"product-card__prices")]/div[@class="price"]/@data-price'
         elem = self.find_element(xpath)
-        return int(elem) if elem is not None else None
+        return int(elem) if elem is not None else ""
+
+    def price_with_sale(self) -> tp.Optional[int]:
+        xpath = '//div[contains(@class,"product-card__prices")]/div[contains(@class,"price-compare")]/@data-compare-price'
+        elem = self.find_element(xpath)
+        return int(elem) if elem is not None else ""
 
     def get_short_desc(self) -> tp.Optional[str]:
         xpath = '//div[@class="product-card__summary"]/text()'

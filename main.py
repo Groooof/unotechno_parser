@@ -93,6 +93,7 @@ for category in categories[::-1]:
             images = list(product_page.get_images_urls())
             in_stock = product_page.get_in_stock_status()
             price = product_page.get_price()
+            price_with_sale = product_page.get_price()
             short_desc = product_page.get_short_desc()
             characs = product_page.get_characteristics()
             mods = product_page.get_product_modifications()
@@ -109,6 +110,7 @@ for category in categories[::-1]:
             data_row["images"] = list(map(asdict, images))
             data_row["in_stock"] = in_stock
             data_row["price"] = price
+            data_row["price_with_sale"] = price_with_sale
             data_row["short_desc"] = short_desc
             for charac in characs:
                 data_row[charac.name] = charac.value
