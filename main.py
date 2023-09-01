@@ -55,7 +55,7 @@ for category in categories:
     logging.info(f"Category have {pages_count} pages with 30 items per page")
     logging.info(f"Total: {pages_count * 30} items")
     products_urls = []
-    for page in range(1, 2):  # pages_count + 1):
+    for page in range(1, pages_count + 1):
         logging.info(f"Parse {page} page")
 
         try:
@@ -129,11 +129,10 @@ for category in categories:
             continue
 
         data.append(data_row)
-        # pprint(data_row)
 
     try:
         df = pd.DataFrame(data=data)
-        df.to_excel(f"{category.name.strip().lower()}_0.xlsx", index=False)
+        df.to_excel(f"{category.name.strip().lower()}.xlsx", index=False)
     except Exception as ex:
         print(".!.")
         logging.warn(3, traceback.format_exc())
